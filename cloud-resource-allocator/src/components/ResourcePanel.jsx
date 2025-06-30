@@ -1,4 +1,4 @@
-export default function ResourcePanel({ resources, activeJobs, queueLength }) {
+export default function ResourcePanel({ resources, activeJobs, queueLength, storedJobs }) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-xl font-semibold mb-4 text-gray-800">Resource Allocation</h2>
@@ -10,6 +10,7 @@ export default function ResourcePanel({ resources, activeJobs, queueLength }) {
           color="blue"
           activeJobs={activeJobs.filter(j => j.cpu > 0).length}
           queueLength={queueLength}
+          storedJobsLength={storedJobs.length}
         />
         <ResourceCard 
           title="Disk Storage (GB)" 
@@ -18,6 +19,7 @@ export default function ResourcePanel({ resources, activeJobs, queueLength }) {
           color="green"
           activeJobs={activeJobs.filter(j => j.disk > 0).length}
           queueLength={queueLength}
+          storedJobsLength={storedJobs.length}
         />
         <ResourceCard 
           title="Memory (GB)" 
@@ -26,13 +28,14 @@ export default function ResourcePanel({ resources, activeJobs, queueLength }) {
           color="purple"
           activeJobs={activeJobs.filter(j => j.memory > 0).length}
           queueLength={queueLength}
+          storedJobsLength={storedJobs.length}
         />
       </div>
     </div>
   );
 }
 
-function ResourceCard({ title, total, used, color, activeJobs, queueLength }) {
+function ResourceCard({ title, total, used, color, activeJobs, queueLength, storedJobsLength }) {
   const percentage = (used / total) * 100;
   const colorClasses = {
     blue: 'bg-blue-500',
@@ -55,6 +58,7 @@ function ResourceCard({ title, total, used, color, activeJobs, queueLength }) {
       </div>
       <div className="flex justify-between mt-1">
         <p className="text-xs text-gray-500">{percentage.toFixed(1)}% utilized</p>
+        {color === "green" && <p className="text-xs text-gray-500">{storedJobsLength} Items stored</p>}
         {queueLength > 0 && (
           <p className="text-xs text-gray-500">{queueLength} in queue</p>
         )}

@@ -6,27 +6,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-let fcfsProcess;
-
-// function startFCFSService() {
-    
-//     fcfsProcess.stdout.on('data', (data) => {
-//         console.log(`FCFS: ${data}`);
-//     });
-    
-//     fcfsProcess.stderr.on('data', (data) => {
-//         console.error(`FCFS Error: ${data}`);
-//     });
-    
-//     fcfsProcess.on('close', (code) => {
-//         console.log(`FCFS process exited with code ${code}`);
-//         // Auto-restart
-//         setTimeout(startFCFSService, 1000);
-//     });
-// }
-
 app.post('/api/fcfs', (req, res) => {
-    fcfsProcess = spawn('./fcfs', ['--service']);
+    const fcfsProcess = spawn('./algorithms/fcfs', ['--service']);
 
     const { arrivals, bursts } = req.body;
     
@@ -71,21 +52,200 @@ app.post('/api/fcfs', (req, res) => {
     
     fcfsProcess.stdout.on('data', listener);
     
-    // // Timeout fallback
-    // setTimeout(() => {
-    //     fcfsProcess.stdout.off('data', listener);
-    //     res.status(500).json({ error: "FCFS response timeout" });
-    // }, 5000);
 });
 
-// Start the FCFS service when server starts
-// startFCFSService();
+app.post('/api/sjf', (req, res) => {
+    const sjfProcess = spawn('./algorithms/sjf', ['--service']);
+
+    const { arrivals, bursts } = req.body;
+    
+    if (!sjfProcess || sjfProcess.killed) {
+        return res.status(500).json({ error: "SJF service not available" });
+    }
+    
+    // Format input for C++ program
+    const input = `${arrivals.join(',')};${bursts.join(',')}\n`;
+    
+    sjfProcess.stdin.write(input);
+    
+    // Collect response
+    const listener = (data) => {
+        const output = data.toString().trim();
+        sjfProcess.stdout.off('data', listener);
+        
+        try {
+            const processes = output.split('|')
+                .filter(x => x)
+                .map(procStr => {
+                    const [id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime] = 
+                        procStr.split(',').map(Number);
+                    return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
+                });
+            
+            // Calculate averages
+            const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
+            const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
+            const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
+            
+            res.json({
+                processes,
+                avgTurnaroundTime,
+                avgWaitingTime,
+                throughput
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to parse SJF output" });
+        }
+    };
+    
+    sjfProcess.stdout.on('data', listener);
+    
+});
+
+app.post('/api/priority', (req, res) => {
+    const priorityProcess = spawn('./algorithms/priority', ['--service']);
+
+    const { arrivals, bursts, priorities } = req.body;
+    
+    if (!priorityProcess || priorityProcess.killed) {
+        return res.status(500).json({ error: "Priority Scheduling service not available" });
+    }
+    
+    // Format input for C++ program
+    const input = `${arrivals.join(',')};${bursts.join(',')};${priorities.join(',')}\n`;
+    console.log(input)
+    
+    priorityProcess.stdin.write(input);
+    
+    // Collect response
+    const listener = (data) => {
+        const output = data.toString().trim();
+        priorityProcess.stdout.off('data', listener);
+        
+        try {
+            const processes = output.trim().split('|')
+                .filter(proc => proc)
+                .map(procStr => {
+                    const [id, arrivalTime, burstTime, priority, completionTime, turnaroundTime, waitingTime] = 
+                        procStr.split(',').map(Number);
+
+                    return { id, arrivalTime, burstTime, priority, completionTime, turnaroundTime, waitingTime };
+                });
+            
+            // Calculate averages
+            const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
+            const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
+            const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
+
+            res.json({
+                processes,
+                avgTurnaroundTime,
+                avgWaitingTime,
+                throughput
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to parse Priority output" });
+        }
+    };
+    
+    priorityProcess.stdout.on('data', listener);
+    
+});
+
+app.post('/api/srtf', (req, res) => {
+    const srtfProcess = spawn('./algorithms/srtf', ['--service']);
+
+    const { arrivals, bursts } = req.body;
+    
+    if (!srtfProcess || srtfProcess.killed) {
+        return res.status(500).json({ error: "srtf service not available" });
+    }
+    
+    const input = `${arrivals.join(',')};${bursts.join(',')}\n`;
+    
+    srtfProcess.stdin.write(input);
+    
+    // Collect response
+    const listener = (data) => {
+        const output = data.toString().trim();
+        srtfProcess.stdout.off('data', listener);
+        
+        try {
+            const processes = output.split('|')
+                .filter(x => x)
+                .map(procStr => {
+                    const [id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime] = 
+                        procStr.split(',').map(Number);
+                    return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
+                });
+            
+            // Calculate averages
+            const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
+            const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
+            const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
+            
+            res.json({
+                processes,
+                avgTurnaroundTime,
+                avgWaitingTime,
+                throughput
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to parse SRTF output" });
+        }
+    };
+    
+    srtfProcess.stdout.on('data', listener);
+});
+
+app.post('/api/roundrobin', (req, res) => {
+    const rrProcess = spawn('./algorithms/rr', ['--service']);
+
+    const { arrivals, bursts } = req.body;
+    
+    if (!rrProcess || rrProcess.killed) {
+        return res.status(500).json({ error: "RR service not available" });
+    }
+    
+    const input = `${arrivals.join(',')};${bursts.join(',')}\n`;
+    
+    rrProcess.stdin.write(input);
+    
+    // Collect response
+    const listener = (data) => {
+        const output = data.toString().trim();
+        rrProcess.stdout.off('data', listener);
+        
+        try {
+            const processes = output.split('|')
+                .filter(x => x)
+                .map(procStr => {
+                    const [id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime] = 
+                        procStr.split(',').map(Number);
+                    return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
+                });
+            
+            // Calculate averages
+            const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
+            const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
+            const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
+            
+            res.json({
+                processes,
+                avgTurnaroundTime,
+                avgWaitingTime,
+                throughput
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to parse RR output" });
+        }
+    };
+    
+    rrProcess.stdout.on('data', listener);
+});
+
+
 
 app.listen(4000, () => {
     console.log(`Server running on port 4000`);
 });
-
-// process.on('SIGTERM', () => {
-//     fcfsProcess?.kill();
-//     process.exit();
-// });

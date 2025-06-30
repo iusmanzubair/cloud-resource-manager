@@ -3,14 +3,18 @@ import AlgorithmSelector from './components/AlgorithmSelector';
 import JobForm from './components/JobForm';
 import ResourcePanel from './components/ResourcePanel';
 import { calculateMetrics } from './utils/calculateMetrics';
+import StorageForm from './components/StorageForm';
 
 function App() {
+  const [id, setId] = useState(1);
   const [selectedCPUAlgo, setSelectedCPUAlgo] = useState('FCFS');
   const [selectedPageAlgo, setSelectedPageAlgo] = useState("FIFO");
   const [jobQueue, setJobQueue] = useState([]);
   const [activeJobs, setActiveJobs] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
+  const [storedJobs, setStoredJobs] = useState([]);
+  const [memoryPages, setMemoryPages] = useState([]);
   
   const [resources, setResources] = useState({
     cpu: { instances: 4, available: 4 },
@@ -22,9 +26,6 @@ function App() {
     if (jobQueue.length === 0) return;
     
     setIsProcessing(true);
-
-    const metrics = await calculateMetrics(jobQueue, selectedCPUAlgo.toLowerCase().replaceAll(" ", ""));
-    setResults(metrics);
     
     for (const job of jobQueue) {
       setActiveJobs(prev => [...prev, {...job, status: 'processing'}]);
@@ -36,12 +37,17 @@ function App() {
       
       await new Promise(resolve => setTimeout(resolve, job.burstTime * 1000));
 
+      const metrics = await calculateMetrics(jobQueue, selectedCPUAlgo.toLowerCase().replaceAll(" ", ""));
+      setResults(metrics);
+
       setResources(prev => ({
         cpu: { ...prev.cpu, available: prev.cpu.available + job.cpu },
-        disk: { ...prev.disk, available: prev.disk.available + job.disk },
+        disk: { ...prev.disk, available: prev.disk.available },
         memory: { ...prev.memory, available: prev.memory.available + job.memory }
       }));
       
+      if(job.disk > 0)
+        setStoredJobs(prev => [...prev, job.id])
       setActiveJobs(prev => prev.filter(j => j.id !== job.id));
     }
     
@@ -52,10 +58,11 @@ function App() {
   const handleJobSubmit = (newJob) => {
     const jobWithId = {
       ...newJob,
-      id: jobQueue.length + 1,
+      id: id,
       status: 'queued',
     };
 
+    setId(prev => prev + 1);
     setJobQueue([...jobQueue, jobWithId]);
   };
 
@@ -73,7 +80,7 @@ function App() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <ResourcePanel resources={resources} activeJobs={activeJobs} queueLength={jobQueue.length} />
+          <ResourcePanel resources={resources} activeJobs={activeJobs} queueLength={jobQueue.length} storedJobs={storedJobs} />
           
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Algorithm Configuration</h2>
@@ -96,7 +103,14 @@ function App() {
           </div>
 
           <JobForm onSubmit={handleJobSubmit} disabled={isProcessing} queueLength={jobQueue.length} />
-          
+
+          <StorageForm 
+                title="Page ID"
+                storedJobs={storedJobs}
+                selected={selectedPageAlgo}
+                onChange={setSelectedPageAlgo}
+                disabled={isProcessing}
+          />
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-800">Queue Controls</h2>
@@ -156,6 +170,7 @@ function App() {
               </div>
             </div>
           )}
+
           
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4 text-gray-800">Job Queue ({jobQueue.length})</h2>
@@ -180,6 +195,62 @@ function App() {
               </div>
             )}
           </div>
+
+          <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">Disk Storage</h3>
+        
+        {storedJobs.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Storage is currently empty
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            
+            <div className="w-full flex flex-wrap justify-center gap-2">
+              {storedJobs.map((item, index) => (
+                <div
+                  key={index}
+                  className={`relative p-4 border rounded-lg shadow-sm w-24 h-24 flex items-center justify-center transition-all bg-blue-50 border-blue-200`}
+                >
+                  <span className="font-medium text-gray-800">{item}</span>
+                  <span className="absolute bottom-1 right-1 text-xs text-gray-500">
+                    #{index + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">Memory</h3>
+        
+        {memoryPages.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            Memory is currently empty
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            
+            <div className="w-full flex flex-wrap justify-center gap-2">
+              {memoryPages.map((item, index) => (
+                <div
+                  key={index}
+                  className={`relative p-4 border rounded-lg shadow-sm w-24 h-24 flex items-center justify-center transition-all bg-blue-50 border-blue-200`}
+                >
+                  <span className="font-medium text-gray-800">{item}</span>
+                  <span className="absolute bottom-1 right-1 text-xs text-gray-500">
+                    #{index + 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+          </div>
+        )}
+      </div>
         </div>
       </div>
     </div>
