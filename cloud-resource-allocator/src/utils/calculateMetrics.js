@@ -1,11 +1,12 @@
-export const calculateFcfsMetrics = async (jobs) => {
+export const calculateMetrics = async (jobs, algo) => {
   try {
-    const response = await fetch("http://localhost:4000/api/fcfs", {
+    const response = await fetch(`http://localhost:4000/api/${algo}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         arrivals: jobs.map((j) => j.arrivalTime),
         bursts: jobs.map((j) => j.burstTime),
+        priorities: jobs.map((j) => j.priority),
       }),
     });
 
