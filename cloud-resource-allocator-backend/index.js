@@ -245,6 +245,76 @@ app.post('/api/roundrobin', (req, res) => {
 });
 
 
+app.post('/api/fifo', (req, res) => {
+
+    const fifoProcess = spawn('./algorithms/fifo', ['--service']);
+    const { ramSlots, diskPages } = req.body;
+    
+    if (!ramSlots || !diskPages) {
+        return res.status(400).json({ error: "Missing ramSlots or diskPages" });
+    }
+
+    if (!fifoProcess || fifoProcess.killed) {
+        return res.status(500).json({ error: "FIFO service not available" });
+    }
+
+    const input = `${ramSlots};${diskPages.join(',')}\n`;
+    fifoProcess.stdin.write(input);
+
+    const listener = (data) => {
+        const output = data.toString().trim();
+        fifoProcess.stdout.off('data', listener);
+
+        try {
+            const [pageHits, pageFaults] = output.split(',').map(Number);
+            
+            res.json({
+                pageHits,
+                pageFaults
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to parse FIFO output" });
+        }
+    };
+
+    fifoProcess.stdout.once('data', listener);
+});
+
+app.post('/api/lru', (req, res) => {
+
+    const lruProcess = spawn('./algorithms/lru', ['--service']);
+    const { ramSlots, diskPages } = req.body;
+    
+    if (!ramSlots || !diskPages) {
+        return res.status(400).json({ error: "Missing ramSlots or diskPages" });
+    }
+
+    if (!lruProcess || lruProcess.killed) {
+        return res.status(500).json({ error: "LRU service not available" });
+    }
+
+    const input = `${ramSlots};${diskPages.join(',')}\n`;
+    lruProcess.stdin.write(input);
+
+    const listener = (data) => {
+        const output = data.toString().trim();
+        lruProcess.stdout.off('data', listener);
+
+        try {
+            const [pageHits, pageFaults] = output.split(',').map(Number);
+            
+            res.json({
+                pageHits,
+                pageFaults
+            });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to parse LRU output" });
+        }
+    };
+
+    lruProcess.stdout.once('data', listener);
+});
+
 
 app.listen(4000, () => {
     console.log(`Server running on port 4000`);

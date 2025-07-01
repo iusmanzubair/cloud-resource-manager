@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import AlgorithmSelector from './components/AlgorithmSelector';
 import JobForm from './components/JobForm';
 import ResourcePanel from './components/ResourcePanel';
 import { calculateMetrics } from './utils/calculateMetrics';
 import StorageForm from './components/StorageForm';
+import { calculatePagesHitsAndFaults } from './utils/calculatePageHitsAndFaults';
+
+const RAM_SLOTS = 3;
 
 function App() {
   const [id, setId] = useState(1);
@@ -13,8 +16,11 @@ function App() {
   const [activeJobs, setActiveJobs] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [results, setResults] = useState(null);
+  const [pageResults, setPageResults] = useState(null);
+  const [selectedPage, setSelectedPage] = useState(null);
   const [storedJobs, setStoredJobs] = useState([]);
   const [memoryPages, setMemoryPages] = useState([]);
+  const [allPages, setAllPages] = useState([]);
   
   const [resources, setResources] = useState({
     cpu: { instances: 4, available: 4 },
@@ -66,10 +72,68 @@ function App() {
     setJobQueue([...jobQueue, jobWithId]);
   };
 
+  const fifoIndex = useRef(0);
+  const lruRef = useRef(new Map());
+  const handlePageSubmit = (id) => {
+
+    setAllPages(prev => [...prev, id]);
+
+    setMemoryPages(prev => {
+      if(selectedCPUAlgo === "FIFO") {
+        if(prev.includes(id))
+          return prev;
+
+        if(prev.length < RAM_SLOTS)
+          return [...prev, id] 
+
+        const newPages = [...prev];
+        const index = fifoIndex.current % RAM_SLOTS;
+        newPages[index] = id;
+
+        fifoIndex.current += 1;
+        return newPages;
+      }
+      else {
+        if (prev.includes(id)) {
+          lruRef.current.set(id, Date.now());
+          return prev; 
+        }
+
+        if (prev.length < RAM_SLOTS) {
+          lruRef.current.set(id, Date.now());
+          return [...prev, id];
+        }
+
+        let lruPage = prev[0];
+        let minTime = lruRef.current.get(lruPage);
+    
+        for (const page of prev) {
+          const time = lruRef.current.get(page);
+          if (time < minTime) {
+            minTime = time;
+            lruPage = page;
+          }
+        }
+
+        const newPages = prev.map(p => p === lruPage ? id : p);
+        lruRef.current.delete(lruPage);
+        lruRef.current.set(id, Date.now());
+    
+        return newPages;
+      }
+    })
+  }
+
   const handleClearQueue = () => {
     setJobQueue([]);
     setResults(null);
   };
+
+  const handlePageHitsAndFaults = async () => {
+    const _pageResults = await calculatePagesHitsAndFaults(allPages, RAM_SLOTS, selectedPageAlgo.toLowerCase());
+    setPageResults(_pageResults);
+    console.log(pageResults)
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -94,7 +158,7 @@ function App() {
               />
               <AlgorithmSelector 
                 title="Page Replacement Algorithm"
-                algorithms={["FIFO", "LRU", "Optimal"]}
+                algorithms={["FIFO", "LRU"]}
                 selected={selectedPageAlgo}
                 onChange={setSelectedPageAlgo}
                 disabled={isProcessing}
@@ -104,13 +168,8 @@ function App() {
 
           <JobForm onSubmit={handleJobSubmit} disabled={isProcessing} queueLength={jobQueue.length} />
 
-          <StorageForm 
-                title="Page ID"
-                storedJobs={storedJobs}
-                selected={selectedPageAlgo}
-                onChange={setSelectedPageAlgo}
-                disabled={isProcessing}
-          />
+          <StorageForm storedJobs={storedJobs} onSubmit={handlePageSubmit} />
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-gray-800">Queue Controls</h2>
@@ -247,9 +306,20 @@ function App() {
                 </div>
               ))}
             </div>
-
           </div>
         )}
+        <button onClick={handlePageHitsAndFaults} className={`px-4 py-2 text-sm rounded-md text-blue-600 underline mt-6`} >Page Hits/Faults</button>
+        {pageResults && <div className="grid grid-cols-2 gap-4">
+          <div className="bg-green-50 p-3 rounded-md">
+            <p className="text-sm text-green-800">Page Hits</p>
+            <p className="text-2xl font-bold">{pageResults.pageHits}</p>
+          </div>
+          <div className="bg-red-50 p-3 rounded-md">
+            <p className="text-sm text-red-800">Page Faults</p>
+            <p className="text-2xl font-bold">{pageResults.pageFaults}</p>
+          </div>
+        </div>
+}
       </div>
         </div>
       </div>
