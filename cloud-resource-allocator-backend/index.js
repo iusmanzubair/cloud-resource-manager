@@ -15,12 +15,10 @@ app.post('/api/fcfs', (req, res) => {
         return res.status(500).json({ error: "FCFS service not available" });
     }
     
-    // Format input for C++ program
     const input = `${arrivals.join(',')};${bursts.join(',')}\n`;
     
     fcfsProcess.stdin.write(input);
     
-    // Collect response
     const listener = (data) => {
         const output = data.toString().trim();
         fcfsProcess.stdout.off('data', listener);
@@ -34,7 +32,6 @@ app.post('/api/fcfs', (req, res) => {
                     return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
                 });
             
-            // Calculate averages
             const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
             const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
             const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
@@ -63,12 +60,10 @@ app.post('/api/sjf', (req, res) => {
         return res.status(500).json({ error: "SJF service not available" });
     }
     
-    // Format input for C++ program
     const input = `${arrivals.join(',')};${bursts.join(',')}\n`;
     
     sjfProcess.stdin.write(input);
     
-    // Collect response
     const listener = (data) => {
         const output = data.toString().trim();
         sjfProcess.stdout.off('data', listener);
@@ -82,7 +77,6 @@ app.post('/api/sjf', (req, res) => {
                     return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
                 });
             
-            // Calculate averages
             const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
             const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
             const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
@@ -111,13 +105,11 @@ app.post('/api/priority', (req, res) => {
         return res.status(500).json({ error: "Priority Scheduling service not available" });
     }
     
-    // Format input for C++ program
     const input = `${arrivals.join(',')};${bursts.join(',')};${priorities.join(',')}\n`;
     console.log(input)
     
     priorityProcess.stdin.write(input);
     
-    // Collect response
     const listener = (data) => {
         const output = data.toString().trim();
         priorityProcess.stdout.off('data', listener);
@@ -132,7 +124,6 @@ app.post('/api/priority', (req, res) => {
                     return { id, arrivalTime, burstTime, priority, completionTime, turnaroundTime, waitingTime };
                 });
             
-            // Calculate averages
             const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
             const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
             const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
@@ -165,7 +156,6 @@ app.post('/api/srtf', (req, res) => {
     
     srtfProcess.stdin.write(input);
     
-    // Collect response
     const listener = (data) => {
         const output = data.toString().trim();
         srtfProcess.stdout.off('data', listener);
@@ -179,7 +169,6 @@ app.post('/api/srtf', (req, res) => {
                     return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
                 });
             
-            // Calculate averages
             const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
             const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
             const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));
@@ -211,7 +200,6 @@ app.post('/api/roundrobin', (req, res) => {
     
     rrProcess.stdin.write(input);
     
-    // Collect response
     const listener = (data) => {
         const output = data.toString().trim();
         rrProcess.stdout.off('data', listener);
@@ -225,7 +213,6 @@ app.post('/api/roundrobin', (req, res) => {
                     return { id, arrivalTime, burstTime, completionTime, turnaroundTime, waitingTime };
                 });
             
-            // Calculate averages
             const avgTurnaroundTime = processes.reduce((sum, p) => sum + p.turnaroundTime, 0) / processes.length;
             const avgWaitingTime = processes.reduce((sum, p) => sum + p.waitingTime, 0) / processes.length;
             const throughput = processes.length / Math.max(...processes.map(p => p.completionTime));

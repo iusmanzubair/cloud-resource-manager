@@ -25,7 +25,6 @@ vector<Process> calculateRR(const vector<int>& arrivals, const vector<int>& burs
     vector<Process> processes;
     int n = arrivals.size();
     
-    // Initialize processes
     for (int i = 0; i < n; i++) {
         processes.push_back({i+1, arrivals[i], bursts[i], bursts[i], 0, 0, 0});
     }
@@ -37,29 +36,25 @@ vector<Process> calculateRR(const vector<int>& arrivals, const vector<int>& burs
     int quantumUsed = 0;
 
     while (completed < n) {
-        // Add arriving processes to ready queue
         for (auto& p : processes) {
             if (p.arrivalTime == currentTime && p.remainingTime > 0) {
                 readyQueue.push(&p);
             }
         }
 
-        // If current process finished its quantum or completed
         if (current && (quantumUsed >= TIME_QUANTUM || current->remainingTime == 0)) {
             if (current->remainingTime > 0) {
-                readyQueue.push(current); // Put back in queue if not finished
+                readyQueue.push(current); 
             }
             current = nullptr;
         }
 
-        // Get next process if none running
         if (!current && !readyQueue.empty()) {
             current = readyQueue.front();
             readyQueue.pop();
             quantumUsed = 0;
         }
 
-        // Execute current process
         if (current) {
             current->remainingTime--;
             quantumUsed++;
@@ -79,31 +74,26 @@ vector<Process> calculateRR(const vector<int>& arrivals, const vector<int>& burs
     return processes;
 }
 
-// Identical IPC structure to FCFS/SRTF
 void runAsService() {
     string input;
     while (getline(cin, input)) {
         size_t sep = input.find(';');
         vector<int> arrivals, bursts;
         
-        // Parse arrivals
         char* token = strtok(const_cast<char*>(input.substr(0, sep).c_str()), ",");
         while (token) {
             arrivals.push_back(stoi(token));
             token = strtok(nullptr, ",");
         }
         
-        // Parse bursts
         token = strtok(const_cast<char*>(input.substr(sep + 1).c_str()), ",");
         while (token) {
             bursts.push_back(stoi(token));
             token = strtok(nullptr, ",");
         }
         
-        // Calculate RR
         auto results = calculateRR(arrivals, bursts);
         
-        // Same output format as FCFS/SRTF
         for (const auto& p : results) {
             cout << p.id << "," << p.arrivalTime << "," << p.burstTime << ","
                  << p.completionTime << "," << p.turnaroundTime << "," << p.waitingTime << "|";
@@ -116,7 +106,6 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && strcmp(argv[1], "--service") == 0) {
         runAsService();
     } else {
-        // Test mode (same structure)
         vector<int> arrivals = {0, 1, 2, 4};
         vector<int> bursts = {5, 3, 8, 6};
         

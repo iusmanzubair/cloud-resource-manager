@@ -20,9 +20,9 @@ struct Process {
 struct ComparePriority {
     bool operator()(const Process& a, const Process& b) {
         if (a.priority == b.priority) {
-            return a.arrivalTime > b.arrivalTime; // For same priority, earlier arrival first
+            return a.arrivalTime > b.arrivalTime; 
         }
-        return a.priority > b.priority; // Lower number = higher priority
+        return a.priority > b.priority; 
     }
 };
 
@@ -30,12 +30,10 @@ vector<Process> calculatePriority(const vector<int>& arrivals, const vector<int>
     vector<Process> processes;
     int n = arrivals.size();
     
-    // Create processes
     for (int i = 0; i < n; i++) {
         processes.push_back({i + 1, arrivals[i], bursts[i], priorities[i], 0, 0, 0});
     }
     
-    // Sort by arrival time
     sort(processes.begin(), processes.end(), 
         [](const Process& a, const Process& b) { 
             return a.arrivalTime < b.arrivalTime; 
@@ -47,7 +45,6 @@ vector<Process> calculatePriority(const vector<int>& arrivals, const vector<int>
     int index = 0;
     
     while (index < n || !readyQueue.empty()) {
-        // Add arrived processes to ready queue
         while (index < n && processes[index].arrivalTime <= currentTime) {
             readyQueue.push(processes[index]);
             index++;
@@ -57,12 +54,10 @@ vector<Process> calculatePriority(const vector<int>& arrivals, const vector<int>
             Process current = readyQueue.top();
             readyQueue.pop();
             
-            // Handle idle time between processes
             if (currentTime < current.arrivalTime) {
                 currentTime = current.arrivalTime;
             }
             
-            // Calculate process metrics
             current.completionTime = currentTime + current.burstTime;
             current.turnaroundTime = current.completionTime - current.arrivalTime;
             current.waitingTime = current.turnaroundTime - current.burstTime;
@@ -70,14 +65,12 @@ vector<Process> calculatePriority(const vector<int>& arrivals, const vector<int>
             results.push_back(current);
             currentTime = current.completionTime;
         } else {
-            // Jump to next arrival time if no processes are ready
             if (index < n) {
                 currentTime = processes[index].arrivalTime;
             }
         }
     }
     
-    // Sort results by completion time
     sort(results.begin(), results.end(),
         [](const Process& a, const Process& b) {
             return a.completionTime < b.completionTime;
@@ -94,21 +87,18 @@ void runAsService() {
         
         vector<int> arrivals, bursts, priorities;
         
-        // Parse arrivals
         char* token = strtok(const_cast<char*>(input.substr(0, sep1).c_str()), ",");
         while (token) {
             arrivals.push_back(stoi(token));
             token = strtok(nullptr, ",");
         }
         
-        // Parse bursts
         token = strtok(const_cast<char*>(input.substr(sep1 + 1, sep2 - (sep1 + 1)).c_str()), ",");
         while (token) {
             bursts.push_back(stoi(token));
             token = strtok(nullptr, ",");
         }
         
-        // Parse priorities
         token = strtok(const_cast<char*>(input.substr(sep2 + 1).c_str()), ",");
         while (token) {
             priorities.push_back(stoi(token));
@@ -117,7 +107,6 @@ void runAsService() {
         
         auto results = calculatePriority(arrivals, bursts, priorities);
         
-        // Output format: id,arrival,burst,priority,completion,turnaround,waiting
         for (const auto& p : results) {
             cout << p.id << ","
                  << p.arrivalTime << ","
@@ -135,10 +124,9 @@ int main(int argc, char* argv[]) {
     if (argc > 1 && strcmp(argv[1], "--service") == 0) {
         runAsService();
     } else {
-        // Test data
         vector<int> arrivals = {0, 1, 2, 4};
         vector<int> bursts = {5, 3, 8, 6};
-        vector<int> priorities = {3, 1, 4, 2}; // Lower number = higher priority
+        vector<int> priorities = {3, 1, 4, 2}; 
         
         auto results = calculatePriority(arrivals, bursts, priorities);
         
