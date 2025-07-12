@@ -6,7 +6,7 @@ import { calculateMetrics } from './utils/calculateMetrics';
 import StorageForm from './components/StorageForm';
 import { calculatePagesHitsAndFaults } from './utils/calculatePageHitsAndFaults';
 
-const RAM_SLOTS = 3;
+const RAM_SLOTS = 4;
 
 function App() {
   const [id, setId] = useState(1);
@@ -24,7 +24,7 @@ function App() {
   
   const [resources, setResources] = useState({
     cpu: { instances: 4, available: 4 },
-    disk: { instances: 10, available: 10 },
+    disk: { instances: 64, available: 64 },
     memory: { instances: 16, available: 16 }
   });
 
@@ -41,10 +41,10 @@ function App() {
         memory: { ...prev.memory, available: prev.memory.available - job.memory }
       }));
       
-      await new Promise(resolve => setTimeout(resolve, job.burstTime * 1000));
-
-      const metrics = await calculateMetrics(jobQueue, selectedCPUAlgo.toLowerCase().replaceAll(" ", ""));
-      setResults(metrics);
+      await new Promise(resolve => setTimeout(resolve, job.burstTime * 1000)).then(async () => {
+        const metrics = await calculateMetrics(jobQueue, selectedCPUAlgo.toLowerCase().replaceAll(" ", ""));
+        setResults(metrics);
+      });
 
       setResources(prev => ({
         cpu: { ...prev.cpu, available: prev.cpu.available + job.cpu },

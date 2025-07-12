@@ -84,7 +84,7 @@ export default function JobForm({ onSubmit, disabled, queueLength }) {
               value={formData.disk}
               onChange={handleChange}
               min="0"
-              max="10"
+              max="64"
               disabled={disabled}
               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100"
               required
